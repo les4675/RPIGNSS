@@ -22,3 +22,7 @@ uart_server_project/
 
 Use the following line to install all dependancies onto your Raspberry Pi 
 pip install -r requirements.txt
+
+Receiver: https://www.digikey.com/en/products/detail/sparkfun-electronics/GPS-18037/16719314
+
+Antenna: https://www.digikey.com/en/products/detail/sparkfun-electronics/GPS-14986/9682235
