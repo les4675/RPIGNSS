@@ -46,7 +46,7 @@ Navigate to Interface Options > Serial Port.
 
 Add enable_uart=1 to /boot/config.txt if not already present:
 
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 
 Add this line at the end:
 
