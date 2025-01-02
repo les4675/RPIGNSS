@@ -1,0 +1,12 @@
+# Use "pip install -r requirements.txt" to install
+
+# Serial communication library
+pyserial==3.5
+
+# Logging (optional if using advanced logging libraries)
+# loguru==0.6.0
+
+# Testing framework
+pytest==7.4.2
+
+
