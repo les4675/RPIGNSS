@@ -2,7 +2,7 @@ import serial
 import time
 
 # Configuration
-UART_PORT = "/dev/serial0"  # Update to your UART port
+UART_PORT = "/dev/ttyAMA0"  # Update to your UART port
 BAUD_RATE = 38400  # Ensure this matches the GNSS configuration
 
 class GNSS:
