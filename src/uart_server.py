@@ -20,8 +20,12 @@ def main():
         while True:
             if ser.in_waiting > 0:
                 # Read command from UART
-                command = ser.readline().decode('utf-8').strip()
-                print(f"Received command: {command}")
+                try:
+                    command = ser.readl ine().decode('utf-8').strip()
+                    print(f"Received command: {command}")
+                except UnicodeDecodeError as e:
+                    print(f"UnicodeDecodeError: {e}")
+                    continue
 
                 if command == "get_location":
                     location = gnss.get_location()
