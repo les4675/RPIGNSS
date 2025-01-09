@@ -2,7 +2,7 @@ from gnss_module import GNSS
 import serial
 
 # Server Configuration
-UART_PORT = "/dev/serial0"  # Replace with the appropriate port
+UART_PORT = "/dev/ttyAMA0"  # Replace with the appropriate port
 BAUD_RATE = 38400
 
 def main():

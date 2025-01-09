@@ -2,7 +2,7 @@ import serial
 import time
 
 # Configuration
-UART_PORT = "/dev/serial0"  # Update this to the correct UART port
+UART_PORT = "/dev/ttyAMA0"  # Update this to the correct UART port
 BAUD_RATES = [38400, 9600]  # GNSS may operate at different baud rates
 
 class GNSS:

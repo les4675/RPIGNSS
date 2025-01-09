@@ -2,7 +2,7 @@ import serial
 import threading
 
 # Initialize UART
-UART_PORT = '/dev/serial0'  # Update if using a USB-to-serial adapter (e.g., '/dev/ttyUSB0')
+UART_PORT = '/dev/ttyAMA0'  # Update if using a USB-to-serial adapter (e.g., '/dev/ttyUSB0')
 BAUD_RATE = 9600  # Match the baud rate of the connected device
 
 # Function to handle receiving data
