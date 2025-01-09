@@ -1,54 +1,45 @@
+from gnss_module import GNSS
 import serial
-import threading
 
-# Initialize UART
-UART_PORT = '/dev/serial0'  # Update if using a USB-to-serial adapter (e.g., '/dev/ttyUSB0')
-BAUD_RATE = 9600  # Match the baud rate of the connected device
+# Server Configuration
+UART_PORT = "/dev/serial0"  # Replace with the appropriate port
+BAUD_RATE = 38400
 
-# Function to handle receiving data
-def receive_data(serial_conn):
-    while True:
-        if serial_conn.in_waiting > 0:
-            data = serial_conn.read(serial_conn.in_waiting).decode('utf-8').strip()
-            print(f"Received: {data}")
-            # Optionally process the data here
-
-# Function to send data
-def send_data(serial_conn):
-    while True:
-        message = input("Enter message to send: ")
-        if message.lower() == 'exit':  # Exit condition
-            print("Exiting program...")
-            serial_conn.close()
-            break
-        serial_conn.write(f"{message}\n".encode('utf-8'))
-        print("Message sent.")
-
-# Main function
 def main():
-    try:
-        # Open the serial connection
-        with serial.Serial(UART_PORT, BAUD_RATE, timeout=1) as serial_conn:
-            print(f"Connected to {UART_PORT} at {BAUD_RATE} baud.")
-            
-            # Start threads for receiving and sending
-            receiver_thread = threading.Thread(target=receive_data, args=(serial_conn,))
-            sender_thread = threading.Thread(target=send_data, args=(serial_conn,))
-            
-            receiver_thread.daemon = True
-            sender_thread.daemon = True
-            
-            receiver_thread.start()
-            sender_thread.start()
-            
-            # Keep the main thread alive
-            receiver_thread.join()
-            sender_thread.join()
+    # Initialize UART server
+    ser = serial.Serial(UART_PORT, baudrate=BAUD_RATE, timeout=1)
+    print("UART server initialized. Listening for commands...")
+    
+    # Initialize GNSS
+    gnss = GNSS()
+    if not gnss.initialize():
+        print("Failed to initialize GNSS.")
+        return
 
-    except serial.SerialException as e:
-        print(f"Serial exception: {e}")
+    try:
+        while True:
+            if ser.in_waiting > 0:
+                # Read command from UART
+                command = ser.readline().decode('utf-8').strip()
+                print(f"Received command: {command}")
+
+                if command == "get_location":
+                    location = gnss.get_location()
+                    if "error" in location:
+                        response = f"Error: {location['error']}"
+                    else:
+                        response = (f"Lat: {location['latitude']}°, "
+                                    f"Lon: {location['longitude']}°, "
+                                    f"Alt: {location['altitude']}m, "
+                                    f"SIV: {location['siv']}")
+                    ser.write((response + "\n").encode('utf-8'))
+                else:
+                    ser.write(b"Unknown command\n")
     except KeyboardInterrupt:
-        print("Program interrupted. Exiting...")
+        print("Shutting down server...")
+    finally:
+        gnss.close()
+        ser.close()
 
 if __name__ == "__main__":
     main()

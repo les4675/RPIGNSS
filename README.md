@@ -1,21 +1,8 @@
-File structure of the repo
 uart_server_project/
-│
 ├── src/
-│   ├── __init__.py             # Marks this directory as a Python package
-│   ├── uart_server.py          # Main script to run the server
-│   ├── uart_handler.py         # Module for UART communication logic
-│   ├── config.py               # Configuration settings (e.g., UART port, baud rate)
-│   └── utils/
-│       ├── __init__.py         # Marks this directory as a Python package
-│       └── logger.py           # Utility functions for logging
-│
-├── tests/
-│   ├── __init__.py             # Marks this directory as a Python package
-│   ├── test_uart_handler.py    # Unit tests for UART handler
-│   └── test_logger.py          # Unit tests for logging utilities
-│
-├── requirements.txt            # List of Python dependencies
+│   ├── uart_server.py       # The main server program
+│   ├── gnss_module.py       # New GNSS module with GNSS interaction functions
+├── requirements.txt         # Include pyserial and any other dependencies
 ├── README.md                   # Documentation for the project
 └── .gitignore                  # Git ignore file for unnecessary files (e.g., .pyc, __pycache__)
 
