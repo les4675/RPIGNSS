@@ -2,51 +2,71 @@ import serial
 import time
 
 # Configuration
-UART_PORT = "/dev/serial0"  # Update this to the correct UART port
-BAUD_RATES = [38400, 9600]  # GNSS may operate at different baud rates
+UART_PORT = "/dev/ttyAMA0"  # Update to your UART port
+BAUD_RATE = 9600  # Ensure this matches the GNSS configuration
 
 class GNSS:
     def __init__(self):
         self.ser = None
 
     def initialize(self):
-        """Initialize the GNSS module by finding the correct baud rate."""
-        for baud in BAUD_RATES:
-            try:
-                print(f"Trying {baud} baud...")
-                self.ser = serial.Serial(UART_PORT, baudrate=baud, timeout=1)
-                time.sleep(2)  # Allow time for initialization
-                # Send a test UBX command (optional, customize as needed)
-                self.ser.write(b"\xB5\x62\x06\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-                response = self.ser.read(10)
-                if response:
-                    print(f"Connected at {baud} baud.")
-                    if baud == 9600:
-                        print("Switching GNSS to 38400 baud...")
-                        self.ser.write(b"\xB5\x62\x06\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
-                        time.sleep(1)
-                    return True
-            except serial.SerialException as e:
-                print(f"Failed at {baud} baud: {e}")
-        raise Exception("Failed to connect to GNSS module.")
-
-    def get_location(self):
-        """Query GNSS module for position data."""
+        """Initialize GNSS module for NMEA communication."""
         try:
-            self.ser.write(b"\xB5\x62\x01\x02\x00\x00\x03\x0A")  # UBX request command
-            time.sleep(0.1)
-            data = self.ser.read(36)  # Example payload size for UBX response
-            if len(data) < 36:
-                return {"error": "Incomplete data received"}
+            self.ser = serial.Serial(UART_PORT, baudrate=BAUD_RATE, timeout=1)
+            time.sleep(2)  # Allow time for GNSS to stabilize
+            print(f"Connected to GNSS module at {BAUD_RATE} baud.")
+            return True
+        except serial.SerialException as e:
+            print(f"Failed to connect to GNSS module: {e}")
+            return False
 
-            # Parse data (latitude, longitude, altitude, and SIV)
-            lat = int.from_bytes(data[10:14], byteorder="little", signed=True) / 10**7
-            lon = int.from_bytes(data[14:18], byteorder="little", signed=True) / 10**7
-            alt = int.from_bytes(data[22:26], byteorder="little", signed=True) / 1000
-            siv = data[23]
-            return {"latitude": lat, "longitude": lon, "altitude": alt, "siv": siv}
+    def read_nmea(self):
+        """Read NMEA sentence from GNSS module."""
+        if not self.ser:
+            return {"error": "Serial connection not initialized"}
+        try:
+            line = self.ser.readline().decode('ascii', errors='ignore').strip()
+            if line.startswith("$"):
+                return {"nmea": line}
+            return {"error": "Invalid NMEA sentence"}
         except Exception as e:
             return {"error": str(e)}
+
+    def parse_gngga(self, nmea_sentence):
+        """Parse a GNGGA NMEA sentence for latitude, longitude, and altitude."""
+        if not nmea_sentence.startswith("$GNGGA"):
+            return {"error": "Not a GNGGA sentence"}
+        
+        fields = nmea_sentence.split(",")
+        if len(fields) < 15:
+            return {"error": "Incomplete GNGGA sentence"}
+        
+        try:
+            # Parse latitude and longitude
+            lat = self._parse_latitude(fields[2], fields[3])
+            lon = self._parse_longitude(fields[4], fields[5])
+            alt = float(fields[9]) if fields[9] else 0.0  # Altitude in meters
+            return {"latitude": lat, "longitude": lon, "altitude": alt}
+        except Exception as e:
+            return {"error": f"Parsing error: {e}"}
+
+    def _parse_latitude(self, value, hemisphere):
+        """Convert latitude from NMEA format to decimal degrees."""
+        if not value or not hemisphere:
+            return None
+        degrees = int(value[:2])
+        minutes = float(value[2:])
+        decimal = degrees + (minutes / 60.0)
+        return decimal if hemisphere == "N" else -decimal
+
+    def _parse_longitude(self, value, hemisphere):
+        """Convert longitude from NMEA format to decimal degrees."""
+        if not value or not hemisphere:
+            return None
+        degrees = int(value[:3])
+        minutes = float(value[3:])
+        decimal = degrees + (minutes / 60.0)
+        return decimal if hemisphere == "E" else -decimal
 
     def close(self):
         if self.ser:
