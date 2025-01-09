@@ -20,12 +20,14 @@ def main():
         while True:
             if ser.in_waiting > 0:
                 # Read command from UART
-                try:
-                    command = ser.readline().decode('utf-8').strip()
-                    print(f"Received command: {command}")
-                except UnicodeDecodeError as e:
-                    print(f"UnicodeDecodeError: {e}")
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
+                if not line.startswith(">"):
+                    print(f"Ignored non-command data: {line}")
                     continue
+
+                # Extract command (remove `>` prefix)
+                command = line[1:]
+                print(f"Received command: {command}")
 
                 if command == "get_location":
                     location = gnss.get_location()
