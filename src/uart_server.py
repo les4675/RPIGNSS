@@ -3,7 +3,7 @@ import serial
 
 # Server Configuration
 UART_PORT = "/dev/ttyAMA0"  # Replace with the appropriate port
-BAUD_RATE = 38400
+BAUD_RATE = 9600
 
 def main():
     # Initialize UART server
