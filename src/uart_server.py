@@ -21,7 +21,7 @@ def main():
             if ser.in_waiting > 0:
                 # Read command from UART
                 try:
-                    command = ser.readl ine().decode('utf-8').strip()
+                    command = ser.readline().decode('utf-8').strip()
                     print(f"Received command: {command}")
                 except UnicodeDecodeError as e:
                     print(f"UnicodeDecodeError: {e}")
