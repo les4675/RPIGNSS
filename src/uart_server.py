@@ -30,7 +30,7 @@ def read_gnss_data(ser):
     Reads GNSS data from the serial port.
     """
     if ser.in_waiting > 0:
-        raw_data = ser.readline()  # Read a single line
+        raw_data = ser.readline()
         return raw_data.decode('ascii', errors='ignore').strip()
     return None
 
@@ -38,30 +38,44 @@ def main():
     ser = serial.Serial(UART_PORT, baudrate=BAUD_RATE, timeout=1)
     print("UART server initialized. Listening for commands...")
 
+    command_mode = False
+
     try:
         while True:
             if ser.in_waiting > 0:
                 raw_data = ser.readline()
                 try:
-                    command = raw_data.decode('utf-8', errors='ignore').strip()
-                    print(f"Received command: {command}")
+                    data = raw_data.decode('utf-8', errors='ignore').strip()
+                    print(f"Received data: {data}")
                 except UnicodeDecodeError as e:
-                    print(f"Error decoding command: {e}")
+                    print(f"Error decoding data: {e}")
                     continue
 
-                if command == "get_nmea":
-                    print("Fetching GNSS data...")
-                    nmea_data = read_gnss_data(ser)
-                    if nmea_data:
-                        print(f"Raw NMEA Data: {nmea_data}")
-                        processed_data = parse_nmea_sentence(nmea_data)
-                        print(processed_data)
+                if command_mode:
+                    # Process the received command
+                    if data == "get_nmea":
+                        print("Command received: Fetching GNSS data...")
+                        nmea_data = read_gnss_data(ser)
+                        if nmea_data:
+                            print(f"Raw NMEA Data: {nmea_data}")
+                            processed_data = parse_nmea_sentence(nmea_data)
+                            print(processed_data)
+                        else:
+                            print("No GNSS data available.")
+                        command_mode = False  # Exit command mode
                     else:
-                        print("No GNSS data available.")
-                    ser.write(b"GNSS data fetched.\n")
+                        print("Unknown command received.")
+                        command_mode = False  # Exit command mode
                 else:
-                    print("Unknown command received.")
-                    ser.write(b"Unknown command.\n")
+                    # Handle GNSS data
+                    if data.startswith("$"):
+                        processed_data = parse_nmea_sentence(data)
+                        print(processed_data)
+                    elif data == "enter_command_mode":
+                        print("Entering command mode...")
+                        command_mode = True
+                    else:
+                        print(f"Unknown data format: {data}")
 
     except KeyboardInterrupt:
         print("Shutting down server...")
