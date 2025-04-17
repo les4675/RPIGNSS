@@ -6,7 +6,7 @@ GNSS_UART_PORT = "/dev/ttyAMA0"
 GNSS_BAUD_RATE = 9600
 
 # Configuration for second UART output
-OUTPUT_UART_PORT = "/dev/ttyAMA1"  # Change as needed
+OUTPUT_UART_PORT = "/dev/ttyS0"  # Change as needed
 OUTPUT_BAUD_RATE = 9600
 
 class GNSS:
@@ -40,19 +40,31 @@ class GNSS:
             return {"error": str(e)}
 
     def parse_gngga(self, nmea: str) -> dict:
-        """Parse GNGGA sentence for lat, lon, and alt."""
+        """Parse GNGGA sentence for time, lat, lon, and alt."""
         if not nmea.startswith("$GNGGA"):
             return {"error": "Not GNGGA"}
         fields = nmea.split(',')
         if len(fields) < 15:
             return {"error": "Incomplete GNGGA"}
         try:
+            time_utc = self._parse_time(fields[1])
             lat = self._parse_latitude(fields[2], fields[3])
             lon = self._parse_longitude(fields[4], fields[5])
             alt = float(fields[9]) if fields[9] else 0.0
-            return {"latitude": lat, "longitude": lon, "altitude": alt}
+            return {"time_utc": time_utc, "latitude": lat, "longitude": lon, "altitude": alt}
         except Exception as e:
             return {"error": f"Parse error: {e}"}
+
+    def _parse_time(self, value: str) -> str:
+        if not value:
+            return ""
+        try:
+            hour = int(value[0:2])
+            minute = int(value[2:4])
+            second = float(value[4:])
+            return f"{hour:02}:{minute:02}:{second:06.3f} UTC"
+        except:
+            return "Invalid UTC time"
 
     def _parse_latitude(self, value: str, hemi: str) -> float:
         if not value or not hemi:
@@ -78,9 +90,8 @@ class GNSS:
 def forward_to_uart2(data: dict, out_ser: serial.Serial) -> None:
     """Format, send parsed data over the second UART, and print to console."""
     try:
-        msg = f"LAT:{data['latitude']:.6f}, LON:{data['longitude']:.6f}, ALT:{data['altitude']:.2f}\r\n"
+        msg = f"TIME:{data['time_utc']}, LAT:{data['latitude']:.6f}, LON:{data['longitude']:.6f}, ALT:{data['altitude']:.2f}\r\n"
         out_ser.write(msg.encode('utf-8'))
-        # Print the same data on console
         print(f"Galileo Data: {msg.strip()}")
     except Exception as e:
         print(f"UART2 send error: {e}")
@@ -108,7 +119,7 @@ def main():
             if 'nmea' in res:
                 sentence = res['nmea']
                 parsed = gnss.parse_gngga(sentence)
-                if 'latitude' in parsed:
+                if 'latitude' in parsed and 'time_utc' in parsed:
                     forward_to_uart2(parsed, out_ser)
             time.sleep(0.1)
     except KeyboardInterrupt:
